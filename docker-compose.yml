@@ -1,0 +1,29 @@
+version: '3'
+services:
+    mariadb:
+        build: ./mariadb
+        container_name: jeee-mariadb
+        environment:
+            - "MYSQL_ROOT_PASSWORD=mariadb"
+        volumes:
+            - "dbdata:/var/lib/mysql"
+        ports:
+            - "3306:3306"
+    myadmin:
+        image: "phpmyadmin/phpmyadmin"
+        container_name: jeee-myadmin
+        ports:
+            - "8080:80"
+        links:
+            - "mariadb:db"
+    tomcat:
+        build: ./tomcat
+        container_name: jeee-tomcat
+        volumes:
+            - "./webapps:/usr/local/tomcat/webapps"
+        ports:
+            - "8888:8080"
+        links:
+            - "mariadb:db"
+volumes:
+    dbdata:
