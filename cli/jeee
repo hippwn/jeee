@@ -2,9 +2,7 @@
 # 
 # jeee commander
 #
-
-# loads functions
-. ./jeee.func
+cd $JEEE_HOME
 
 OPTS=`getopt -o hiuqrw: --long help,install,uninstall,quit,remove,add-workspace: -n 'parse-options' -- "$@"`
 

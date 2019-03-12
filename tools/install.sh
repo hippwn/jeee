@@ -1,4 +1,55 @@
-JEEE_HOME="~/.jeee"
+# install.sh -- install jeee environment
+# MIT License
+# Copyright (c) 2019 Hippolyte <hippwn>
+
+# 
+# Function definitions
+# 
+
+log_info() {
+	printf "${BLUE}${BOLD}[-]${NORMAL} $1\n"
+}
+
+log_warn() {
+	printf "${YELLOW}${BOLD}[+]${NORMAL} $1\n"
+}
+
+check_if_installed() {
+	if ! command -v $1 >/dev/null 2>&1; then
+		log_warn "\t${BOLD}$1${NORMAL} is not installed! Please install it first."
+		quit_install
+	else
+		log_info "\t${BOLD}$1${NORMAL} is installed!"
+	fi
+}
+
+quit_install() {
+	printf "${RED}[!]${NORMAL} Critical error... aborting!\n"
+	exit 1
+}
+
+get_rc_file() {
+	case "$SHELL" in
+    zsh | /usr/bin/zsh ) echo ".zshrc"; break ;;
+	bash | /usr/bin/bash ) echo ".bashrc"; break ;;
+	ksh | /usr/bin/ksh ) echo ".kshrc"; break ;;
+	fish | /usr/bin/fish ) echo ".fishrc"; break ;;
+	esac
+}
+
+
+#
+# Global variables
+#
+
+JEEE_HOME="$HOME/.jeee"
+USR_RC="$HOME/$(get_rc_file)"
+SRC_CMD=". $JEEE_HOME/tools/rc.sh"
+
+
+#
+# Install 
+#
 
 main() {
 	# Use colors only if available
@@ -26,27 +77,13 @@ main() {
 	# Set "exit on error" after color test
 	set -o errexit
 
-	log_info() {
-		printf "${BLUE}${BOLD}[-]${NORMAL} $1\n"
-	}
 
-	log_warn() {
-		printf "${YELLOW}${BOLD}[+]${NORMAL} $1\n"
-	}
-
-	check_if_installed() {
-		if ! command -v $1 >/dev/null 2>&1; then
-			log_warn "${BOLD}$1${NORMAL} is not installed! Please install it first."
-			quit_install
-		else
-			log_info "${BOLD}$1${NORMAL} is installed!\n"
-		fi
-	}
-
-	quit_install() {
-		printf "${RED}[!]${NORMAL} Critical error... aborting!\n"
-		exit 1
-	}
+	# Check existing installation
+	if [ -d "$JEEE_HOME" ]; then
+		log_warn "An existing installation has been found at ${BOLD}$JEEE_HOME${NORMAL}."
+		log_warn "Please save your data and run ${BOLD}jeee --uninstall${NORMAL} before retrying."
+		quit_install
+	fi
 
 	# Check for requirements
 	log_info "Checking requirements..."
@@ -62,26 +99,30 @@ main() {
 	umask g-w,o-w
 
 	# Cloning repository
-	git clone --depth=1 https://github.com/hippwn/jeee.git "$JEEE_HOME" || {
-		log_warn "git clone of oh-my-zsh repo failed."
+	log_info "Cloning repository..."
+	git clone --depth=1 https://github.com/hippwn/jeee.git "$JEEE_HOME" >/dev/null 2>&1 || {
+		log_warn "git clone of jeee's repository failed."
 		quit_install
 	}
 
 	# Adding to path
 	mkdir -p $JEEE_HOME/bin
-	echo ". $JEEE_HOME/tools/rc.sh"
+	chmod +x $JEEE_HOME/cli/jeee
+	ln -s $JEEE_HOME/cli/jeee $JEEE_HOME/bin
+	# Add only to .*rc if it's not already
+	grep -Fxq "$SRC_CMD" $USR_RC || echo "$SRC_CMD" >> $USR_RC
 
-	printf "${GREEN}"
+
+	printf "${GREEN}\n"
 	echo '        __              '
 	echo '       / /__  ___  ___  '
 	echo '  __  / / _ \/ _ \/ _ \ '
 	echo ' / /_/ /  __/  __/  __/ '
 	echo ' \____/\___/\___/\___/  '
-	echo ''
-	echo ''
-	echo 'Please reload your shell config file: . ~/.bashrc'
+	echo "${NORMAL}"
+	echo 'Please reload your shell config file by running:'
+	printf "\t${BOLD}. $USR_RC"
 	printf "${NORMAL}\n"
-
 }
 
 main
