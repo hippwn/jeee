@@ -127,7 +127,7 @@ main() {
 	# Adding to path
 	log_info "Adding jeee configuration to ${BOLD}$(basename $USR_RC)${NORMAL}..."
 	mkdir -p $JEEE_HOME/bin
-	chmod +x $JEEE_HOME/cli/jeee
+	chmod +x $JEEE_HOME/tools/jeee
 	ln -s $JEEE_HOME/tools/jeee $JEEE_HOME/bin
 	# Add only to .*rc if it's not already
 	grep -Fxq "$SRC_CMD" $USR_RC || echo "$SRC_CMD" >> $USR_RC
