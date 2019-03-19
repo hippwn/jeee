@@ -175,8 +175,8 @@ run() {
 
 	while true; do
 		case "$1" in
-		-h | --help ) local HELP=true ; break ;;
-		-w | --workspace ) local WORKSPACE=${OPTARG}; shift ;;
+		-h | --help | ? ) local HELP=true ; break ;;
+		-w | --workspace ) local WORKSPACE=$2; shift 2 ;;
 		-r | --rebuild ) local REBUILD=true; shift ;;
 		-a | --attach ) local LOG=true; shift ;;
 		-- ) shift ; break ;;
