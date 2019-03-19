@@ -56,6 +56,12 @@ Available options:
         the containers where already running, stop them. Very similar to run:
             ${DIM}jeee stop --remove
             jeee run${NORMAL}
+	
+	${BOLD}-a, --attach${NORMAL}
+        Attach the log output of the containers to the current console. Very
+		similar to run:
+            ${DIM}jeee run
+            jeee log --attach${NORMAL}
 
     ${BOLD}-h, --help${NORMAL}
         Display this help message.
@@ -105,6 +111,21 @@ Available options:
         Display this help message.
 EOF
 )
+	# log help message
+	local LOG_MSG=$(cat << EOF
+Usage: jeee log [ -a | attach ][ -h | help ]
+
+Display the logs of the running containers.
+
+Available options:
+	${BOLD}-a, --attach${NORMAL}
+        Attach the log output to the current console. Use
+		CTRL+C to exit.
+
+	${BOLD}-h, --help${NORMAL}
+        Display this help message.
+EOF
+)
 	# uninstall help message
 	local USL_MSG=$(cat << EOF
 Usage: jeee uninstall [ -h | help ]
@@ -124,6 +145,7 @@ EOF
             stop ) echo "$STP_MDG" ;;
             add-workspace ) echo "$WKS_MSG" ;;
 			remove ) echo "$RMV_MSG" ;;
+			log ) echo "$LOG_MSG" ;;
             uninstall ) echo "$USL_MSG" ;;
         esac
     fi
@@ -146,7 +168,7 @@ add_workspace() {
 }
 
 run() {
-	OPTS=`getopt -o hw:r --long help,workspace:,rebuild -n 'parse-options' -- "$@"`
+	OPTS=`getopt -o hw:ra --long help,workspace:,rebuild,attach -n 'parse-options' -- "$@"`
 	if [ $? != 0 ] ; then log_erro "Failed parsing options." ; quit 1 ; fi
 
 	eval set -- "$OPTS"
@@ -156,6 +178,7 @@ run() {
 		-h | --help ) HELP=true ; break ;;
 		-w | --workspace ) WORKSPACE=${OPTARG}; shift ;;
 		-r | --rebuild ) REBUILD=true; shift ;;
+		-a | --attach ) LOG=true; shift ;;
 		-- ) shift ; break ;;
 		esac
 	done
@@ -166,6 +189,7 @@ run() {
 		if [ -n "$REBUILD" ]; then remove --clean; fi 
 		if [ -n "$WORKSPACE" ]; then add_workspace "$WORKSPACE"; fi
 		docker-compose up -d && log_succ "Containers started."
+		if [ -n "$LOG" ]; then log --attach; fi
 	fi
 }
 
@@ -209,9 +233,29 @@ remove() {
 		esac
 	done
 	if [ -n "$HELP" ]; then
-		usage run
+		usage remove
 	else
 		docker-compose down "$RMARG" >/dev/null 2>&1
+	fi
+}
+
+log() {
+	OPTS=`getopt -o ha --long help,attach -n 'parse-options' -- "$@"`
+	if [ $? != 0 ] ; then log_erro "Failed parsing options." ; quit 1 ; fi
+
+	eval set -- "$OPTS"
+
+	while true; do
+		case "$1" in
+		-h | --help ) HELP=true ; break ;;
+		-a | --attach ) local RMARG="-f"; break ;;
+		-- ) shift ; break ;;
+		esac
+	done
+	if [ -n "$HELP" ]; then
+		usage log
+	else
+		docker-compose logs "$RMARG"
 	fi
 }
 
@@ -259,11 +303,12 @@ main() {
 
 		# Parse command
 		case "$1" in
-			run ) shift; run $@; break ;;
-			stop ) shift; stop $@; break ;;
-			add-workspace ) shift; add_workspace $@; break ;;
-			remove ) shift; remove $@; break ;;
-			uninstall ) uninstall; break ;;
+			run ) shift; run $@ ;;
+			stop ) shift; stop $@ ;;
+			add-workspace ) shift; add_workspace $@ ;;
+			remove ) shift; remove $@ ;;
+			log ) shift; log $@ ;;
+			uninstall ) uninstall ;;
 			-h | --help | * ) usage ;;
 		esac
 

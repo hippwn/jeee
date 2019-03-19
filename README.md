@@ -2,7 +2,8 @@
 
 `jeee` is a simple Java EE development environment based on docker that you can deploy on will. It contains a [MariaDB](https://mariadb.com/) database and a [phpMyAdmin](https://www.phpmyadmin.net/) server, alongside the [Tomcat](https://tomcat.apache.org) execution server that will run your application. 
 
-> **Disclaimer**: `jeee` has been created to help people to get a working development quickly. Do **not** use `jeee` as a production environment without modifications and without knowing what you do.
+> **Disclaimer**: `jeee` has been created to help people getting a working development environment quickly. Do **not** use `jeee` as a production environment without modifications and without knowing what you do.
+
 
 ## Installing `jeee`
 
