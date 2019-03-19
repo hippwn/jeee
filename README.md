@@ -20,7 +20,7 @@ If you just want the *docker*-based environment, you can `git clone` this reposi
 
 Alongside with the containers, `jeee` provides the following content:
 - the `jeee` command. More about this one below.
-- the `webapps` directory &ndash; it's a bind volume with the Tomcat server, just put you `.war` inside to see it executed.
+- the `webapps` directory &ndash; it's a [bind volume](https://docs.docker.com/storage/bind-mounts/) with the Tomcat server, just put you `.war` inside to see it executed.
 - the `example` application &ndash; it's a simple sample that you can check to see if your environment is running, visit `http://localhost:8888/example` in your favorite browser.
 
 > `example` can also guide you to develop your first Java EE application. Watch the directory content to find out more.
