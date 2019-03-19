@@ -7,7 +7,7 @@
 
 ## Installing `jeee`
 
-Just run the following command in your favorite shell.
+Be sure to have `docker`, `docker-compose` and `git` installed on your machine. Then, just run the following command in your favorite shell.
 
 ```bash
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/hippwn/jeee/master/tools/install.sh)"
