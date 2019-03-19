@@ -12,6 +12,7 @@ Be sure to have `docker`, `docker-compose` and `git` installed on your machine. 
 ```bash
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/hippwn/jeee/master/tools/install.sh)"
 ```
+You can now execute `jeee run` and visit `http://localhost:8888/example` to check if your installation worked.
 
 If you just want the *docker*-based environment, you can `git clone` this repository anywhere you need.
 
