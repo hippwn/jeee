@@ -1,9 +1,0 @@
-function run() {
-    echo
-}
-
-function display_help() {
-    cat << EOF
-usage: jeee [ -o | --option ]
-EOF
-}

@@ -1,0 +1,276 @@
+#!/bin/sh
+# 
+# jeee commander
+#
+
+log_info() { printf "${BLUE}${BOLD}[-]${NORMAL} $1\n"; }
+
+log_warn() { printf "${YELLOW}${BOLD}[+]${NORMAL} $1\n" >&2; }
+
+log_erro() { printf "${RED}${BOLD}[!]${NORMAL} $1\n" >&2; }
+
+log_succ() { printf "${GREEN}${BOLD}[*]${NORMAL} $1\n"; }
+
+get_rc_file() {
+	case "$SHELL" in
+    zsh | /usr/bin/zsh ) echo ".zshrc"; break ;;
+	bash | /usr/bin/bash ) echo ".bashrc"; break ;;
+	ksh | /usr/bin/ksh ) echo ".kshrc"; break ;;
+	fish | /usr/bin/fish ) echo ".fishrc"; break ;;
+	esac
+}
+
+quit() { cd - >/dev/null 2>&1; exit $1; }
+
+
+usage() {
+	# Usage help message
+	local USG_MSG=$(cat << EOF
+Usage: jeee COMMAND [OPTIONS]
+
+A commander for your Java EE Environment.
+
+Available commands:
+	${BOLD}run${NORMAL}             Start the environment
+	${BOLD}stop${NORMAL}            Stop the environment
+	${BOLD}add-workspace${NORMAL}   Add a link to the Tomcat workspace
+	${BOLD}uninstall${NORMAL}       Uninstall jeee
+EOF
+)
+	# help command help message
+	local RUN_MSG=$(cat << EOF
+Usage: jeee run [ -w | --workspace <WORKSPACE> ][ -r | --rebuild ][ -h | help ]
+
+Run jeee's containers and build them if necessary. This will expose Tomcat on
+port 8888, MariaDB on port 3306 and phpMyAdmin on port 8080.
+
+Available options:
+    ${BOLD}-w, --workspace${NORMAL} <WORKSPACE>
+        Add the workspace given as argument and then start the containers. Very
+        similar to run:
+            ${DIM}jeee add-workspace <WORKSPACE>
+            jeee run${NORMAL}
+    
+    ${BOLD}-r, --rebuild${NORMAL}
+        Remove the last saved state of the containers before runnin new ones. If
+        the containers where already running, stop them. Very similar to run:
+            ${DIM}jeee stop --remove
+            jeee run${NORMAL}
+
+    ${BOLD}-h, --help${NORMAL}
+        Display this help message.
+
+EOF
+)
+	# stop command help message
+	local STP_MSG=$(cat << EOF
+Usage: stop [ -r | --remove ][ -h | help ]
+
+Stop jeee's containers. Containers are saved while not removed.
+
+Available options:
+    ${BOLD}-r, --remove${NORMAL}
+        Remove container completly. Very 
+        similar to run:
+            ${DIM}jeee stop
+            jeee remove --clean${NORMAL}
+
+    ${BOLD}-h, --help${NORMAL}
+        Display this help message.
+EOF
+)
+	# remove help message
+	local RMV_MSG=$(cat << EOF
+Usage: jeee remove [ -c | --clean ][ -h | help ]
+
+Remove jeee's containers. Volume created by the containers are
+not deleted by default.
+
+Available options:
+	${BOLD}-c, --clean${NORMAL}
+        Remove container completly.
+
+    ${BOLD}-h, --help${NORMAL}
+        Display this help message.
+EOF
+)
+	# add-workspace help message
+	local WKS_MSG=$(cat << EOF
+Usage: jeee add-workspace [ -h | help ] <WORKSPACE>
+
+Add a link at the specified location to the Tomcat workspace.
+
+Available options:
+    ${BOLD}-h, --help${NORMAL}
+        Display this help message.
+EOF
+)
+	# uninstall help message
+	local USL_MSG=$(cat << EOF
+Usage: jeee uninstall [ -h | help ]
+
+Properly uninstall jeee.
+
+Available options:
+    ${BOLD}-h, --help${NORMAL}
+        Display this help message.
+EOF
+)
+	# Print the help message according to the parameter
+	if [ $# -eq 0 ]; then echo "$USG_MSG"; fi
+    if [ $# -eq 1 ]; then
+        case "$1" in
+            run ) echo "$RUN_MSG" ;;
+            stop ) echo "$STP_MDG" ;;
+            add-workspace ) echo "$WKS_MSG" ;;
+			remove ) echo "$RMV_MSG" ;;
+            uninstall ) echo "$USL_MSG" ;;
+        esac
+    fi
+}
+
+add_workspace() {
+	# Return to the location from where the script was called
+	cd - >/dev/null 2>&1
+	dir = $(dirname $1)
+	base = $(basename $1)
+	if [ -d $dir ]; then
+		rdir = $(realpath $dir)
+		ln -s "$JEEE_HOME/webapps" "$rdir/$base"
+		log_succ "workspace created at $rdir/$base"
+	else
+		log_warn "Workspace not created:"
+		log_warn "${DIM}unknown file or directory: $dir${NORMAL}"
+	fi
+	cd $JEEE_HOME
+}
+
+run() {
+	OPTS=`getopt -o hw:r --long help,workspace:,rebuild -n 'parse-options' -- "$@"`
+	if [ $? != 0 ] ; then log_erro "Failed parsing options." ; quit 1 ; fi
+
+	eval set -- "$OPTS"
+
+	while true; do
+		case "$1" in
+		-h | --help ) HELP=true ; break ;;
+		-w | --workspace ) WORKSPACE=${OPTARG}; shift ;;
+		-r | --rebuild ) REBUILD=true; shift ;;
+		-- ) shift ; break ;;
+		esac
+	done
+
+	if [ -n "$HELP" ]; then
+		usage run
+	else
+		if [ -n "$REBUILD" ]; then remove --clean; fi 
+		if [ -n "$WORKSPACE" ]; then add_workspace "$WORKSPACE"; fi
+		docker-compose up -d && log_succ "Containers started."
+	fi
+}
+
+stop() {
+	OPTS=`getopt -o hrR --long help,remove,remove-more -n 'parse-options' -- "$@"`
+	if [ $? != 0 ] ; then log_erro "Failed parsing options." ; quit 1 ; fi
+
+	eval set -- "$OPTS"
+
+	while true; do
+		case "$1" in
+		-h | --help ) HELP=true ; break ;;
+		-r | --remove ) REMOVE=true; break ;;
+		-R | --remove-more ) REMOVE=true; local RMARG="-v"; break ;;
+		-- ) shift ; break ;;
+		esac
+	done
+
+	if [ -n "$HELP" ]; then
+		usage run
+	else
+		if [ -n "$REMOVE" ]; then 
+			docker-compose down "$RMARG"
+		else
+			docker-compose stop
+		fi
+	fi
+}
+
+remove() {
+	OPTS=`getopt -o hc --long help,clean -n 'parse-options' -- "$@"`
+	if [ $? != 0 ] ; then log_erro "Failed parsing options." ; quit 1 ; fi
+
+	eval set -- "$OPTS"
+
+	while true; do
+		case "$1" in
+		-h | --help ) HELP=true ; break ;;
+		-c | --clean ) local RMARG="-v"; break ;;
+		-- ) shift ; break ;;
+		esac
+	done
+	if [ -n "$HELP" ]; then
+		usage run
+	else
+		docker-compose down "$RMARG" >/dev/null 2>&1
+	fi
+}
+
+uninstall() {
+	# Delete JEEE_HOME
+	if [ -d "$JEEE_HOME" ]; then rm -rf "$JEEE_HOME"; fi
+	# Delete .*rc entry if created
+	if [ -f $USR_RC ]; then sed -i "/$(echo ". $JEEE_HOME/tools/rc.sh" | sed -e 's/[\/&]/\\&/g')/d" "$HOME/$(get_rc_file)"; fi
+	# Delete $PATH entry if created -- see https://unix.stackexchange.com/a/291611
+	local bin="$JEEE_HOME/bin"
+	PATH=${PATH//":$bin:"/":"} # delete any instances in the middle
+	PATH=${PATH/#"$bin:"/} # delete any instance at the beginning
+	PATH=${PATH/%":$bin"/} # delete any instance in the at the end
+}
+
+
+main() {
+	# Use colors only if available
+	if which tput >/dev/null 2>&1; then
+		ncolors=$(tput colors)
+	fi
+	if [ -t 1 ] && [ -n "$ncolors" ] && [ "$ncolors" -ge 8 ]; then
+		NORMAL=`tput sgr0`
+		RED=`tput setaf 1`
+		GREEN=`tput setaf 2`
+		YELLOW=`tput setaf 3`
+		BLUE=`tput setaf 4`
+		BOLD=`tput bold`
+		DIM=`tput dim`
+	else
+		NORMAL=""
+		RED=""
+		GREEN=""
+		YELLOW=""
+		BLUE=""
+		BOLD=""
+		DIM=""
+	fi
+
+	if [ -n $JEEE_HOME ]; then
+		cd $JEEE_HOME
+
+		# Set "exit on error" after color test
+		set -o errexit
+
+		# Parse command
+		case "$1" in
+			run ) shift; run $@; break ;;
+			stop ) shift; stop $@; break ;;
+			add-workspace ) shift; add_workspace $@; break ;;
+			remove ) shift; remove $@; break ;;
+			uninstall ) uninstall; break ;;
+			-h | --help | * ) usage ;;
+		esac
+
+		quit
+	else
+		log_erro '$JEEE_HOME is not set: aborting.'
+	fi
+}
+
+main $@

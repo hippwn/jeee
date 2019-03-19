@@ -6,27 +6,13 @@
 # Function definitions
 # 
 
-log_info() {
-	printf "${BLUE}${BOLD}[-]${NORMAL} $1\n"
-}
+log_info() { printf "${BLUE}${BOLD}[-]${NORMAL} $1\n"; }
 
-log_warn() {
-	printf "${YELLOW}${BOLD}[+]${NORMAL} $1\n"
-}
+log_warn() { printf "${YELLOW}${BOLD}[+]${NORMAL} $1\n"; }
 
-check_if_installed() {
-	if ! command -v $1 >/dev/null 2>&1; then
-		log_warn "\t${BOLD}$1${NORMAL} is not installed! Please install it first."
-		quit_install
-	else
-		log_info "\t${BOLD}$1${NORMAL} is installed!"
-	fi
-}
+log_erro() { printf "${RED}${BOLD}[!]${NORMAL} $1\n"; }
 
-quit_install() {
-	printf "${RED}[!]${NORMAL} Critical error... aborting!\n"
-	exit 1
-}
+log_succ() { printf "${GREEN}${BOLD}[*]${NORMAL} $1\n"; }
 
 get_rc_file() {
 	case "$SHELL" in
@@ -45,6 +31,38 @@ get_rc_file() {
 JEEE_HOME="$HOME/.jeee"
 USR_RC="$HOME/$(get_rc_file)"
 SRC_CMD=". $JEEE_HOME/tools/rc.sh"
+
+
+#
+# Variable-dependant function definition
+#
+
+uninstall() {
+	# Delete JEEE_HOME if created
+	if [ -d "$JEEE_HOME" ]; then rm -rf "$JEEE_HOME"; fi
+	# Delete .*rc entry if created
+	if [ -f $USR_RC ]; then sed -i "/$(echo ". $JEEE_HOME/tools/rc.sh" | sed -e 's/[\/&]/\\&/g')/d" $USR_RC; fi
+	# Delete $PATH entry if created -- see https://unix.stackexchange.com/a/291611
+	local bin="$JEEE_HOME/bin"
+	PATH=${PATH//":$bin:"/":"} # delete any instances in the middle
+	PATH=${PATH/#"$bin:"/} # delete any instance at the beginning
+	PATH=${PATH/%":$bin"/} # delete any instance in the at the end
+}
+
+quit_error() {
+	log_erro "Critical error... aborting!"
+	uninstall
+	exit 1
+}
+
+check_if_installed() {
+	if ! command -v $1 >/dev/null 2>&1; then
+		log_warn "\t${BOLD}$1${NORMAL} is not installed! Please install it first."
+		quit_install
+	else
+		log_info "\t${BOLD}$1${NORMAL} is installed!"
+	fi
+}
 
 
 #
@@ -82,7 +100,8 @@ main() {
 	if [ -d "$JEEE_HOME" ]; then
 		log_warn "An existing installation has been found at ${BOLD}$JEEE_HOME${NORMAL}."
 		log_warn "Please save your data and run ${BOLD}jeee --uninstall${NORMAL} before retrying."
-		quit_install
+		log_warn "Quiting."
+		exit
 	fi
 
 	# Check for requirements
@@ -106,13 +125,15 @@ main() {
 	}
 
 	# Adding to path
+	log_info "Adding jeee configuration to ${BOLD}$(basename $USR_RC)${NORMAL}..."
 	mkdir -p $JEEE_HOME/bin
 	chmod +x $JEEE_HOME/cli/jeee
-	ln -s $JEEE_HOME/cli/jeee $JEEE_HOME/bin
+	ln -s $JEEE_HOME/tools/jeee $JEEE_HOME/bin
 	# Add only to .*rc if it's not already
 	grep -Fxq "$SRC_CMD" $USR_RC || echo "$SRC_CMD" >> $USR_RC
 
-
+	log_succ "Installation succesful!"
+	
 	printf "${GREEN}\n"
 	echo '        __              '
 	echo '       / /__  ___  ___  '
