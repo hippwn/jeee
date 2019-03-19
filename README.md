@@ -39,15 +39,15 @@ The containers provide the following services
 Jeee provides a wrapper around the `docker-compose` command that allows you to control your environment from basically anywhere on your system. You can of course still use `docker-compose` to control any container, including jeee's. 
 
 ```
-$ jeee -h
 Usage: jeee COMMAND [OPTIONS]
 
 A commander for your Java EE Environment.
 
 Available commands:
-	run             Start the environment
-	stop            Stop the environment
-	add-workspace   Add a link to the Tomcat workspace
-	uninstall       Uninstall jeee
-
+    run             Start the environment
+    stop            Stop the environment
+    add-workspace   Add a link to the Tomcat workspace
+    remove          Remove the containers
+    log             Display logs from the containers
+    uninstall       Uninstall jeee
 ```
