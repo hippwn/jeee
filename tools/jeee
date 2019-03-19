@@ -154,10 +154,10 @@ EOF
 add_workspace() {
 	# Return to the location from where the script was called
 	cd - >/dev/null 2>&1
-	dir = $(dirname $1)
-	base = $(basename $1)
+	dpath=$(dirname $1)
+	base=$(basename $1)
 	if [ -d $dir ]; then
-		rdir = $(realpath $dir)
+		rdir=$(realpath $dpath)
 		ln -s "$JEEE_HOME/webapps" "$rdir/$base"
 		log_succ "workspace created at $rdir/$base"
 	else
@@ -175,10 +175,10 @@ run() {
 
 	while true; do
 		case "$1" in
-		-h | --help ) HELP=true ; break ;;
-		-w | --workspace ) WORKSPACE=${OPTARG}; shift ;;
-		-r | --rebuild ) REBUILD=true; shift ;;
-		-a | --attach ) LOG=true; shift ;;
+		-h | --help ) local HELP=true ; break ;;
+		-w | --workspace ) local WORKSPACE=${OPTARG}; shift ;;
+		-r | --rebuild ) local REBUILD=true; shift ;;
+		-a | --attach ) local LOG=true; shift ;;
 		-- ) shift ; break ;;
 		esac
 	done
@@ -201,9 +201,9 @@ stop() {
 
 	while true; do
 		case "$1" in
-		-h | --help ) HELP=true ; break ;;
-		-r | --remove ) REMOVE=true; break ;;
-		-R | --remove-more ) REMOVE=true; local RMARG="-v"; break ;;
+		-h | --help ) local HELP=true ; break ;;
+		-r | --remove ) local REMOVE=true; break ;;
+		-R | --remove-more ) local REMOVE=true; local RMARG="-v"; break ;;
 		-- ) shift ; break ;;
 		esac
 	done
@@ -227,7 +227,7 @@ remove() {
 
 	while true; do
 		case "$1" in
-		-h | --help ) HELP=true ; break ;;
+		-h | --help ) local HELP=true ; break ;;
 		-c | --clean ) local RMARG="-v"; break ;;
 		-- ) shift ; break ;;
 		esac
@@ -247,7 +247,7 @@ log() {
 
 	while true; do
 		case "$1" in
-		-h | --help ) HELP=true ; break ;;
+		-h | --help ) local HELP=true ; break ;;
 		-a | --attach ) local RMARG="-f"; break ;;
 		-- ) shift ; break ;;
 		esac
